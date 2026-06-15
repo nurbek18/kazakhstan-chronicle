@@ -44,6 +44,10 @@ function t(key, ...args) {
   return typeof val === 'function' ? val(...args) : (val ?? key);
 }
 
+function hasChinese(text) {
+  return /[\u4e00-\u9fff]/.test(text || '');
+}
+
 function sectionLabel(section) {
   return UI.sections[section] || section;
 }
@@ -57,11 +61,13 @@ function sourceName(name) {
 
 function getLocalizedArticle(article) {
   if (!article) return null;
+  if (article._zhDisplay) return article._zhDisplay;
+
   const src = article.lang || 'ru';
   const tr = article.translations?.zh;
 
-  if (tr?.title) {
-    const hasBody = tr.body?.length > 0;
+  if (tr?.title && hasChinese(tr.title)) {
+    const hasBody = tr.body?.length > 0 && hasChinese(tr.body[0]);
     return {
       title: tr.title,
       summary: tr.summary || article.summary,
@@ -91,6 +97,11 @@ function getLocalizedArticle(article) {
     isTranslated: false,
     needsTranslation: true,
   };
+}
+
+function setLocalizedDisplay(article, loc) {
+  article._zhDisplay = { ...loc, needsTranslation: false };
+  return loc;
 }
 
 function formatDateTime(iso) {

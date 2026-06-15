@@ -242,6 +242,32 @@ def enrich_images(articles: list[dict], limit: int = 30) -> None:
             fetched += 1
 
 
+def translate_text(text: str, src: str, dest: str) -> str:
+    if not text or src == dest:
+        return text
+    dest_map = {"zh": "zh-CN", "ru": "ru", "en": "en", "kk": "kk"}
+    src_code = dest_map.get(src, src)
+    dest_code = dest_map.get(dest, dest)
+    if src_code == dest_code:
+        return text
+
+    chunk = text[:4500]
+    params = urllib.parse.urlencode({
+        "client": "gtx", "sl": src_code, "tl": dest_code, "dt": "t", "q": chunk,
+    })
+    url = f"https://translate.googleapis.com/translate_a/single?{params}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        raw = urllib.request.urlopen(req, timeout=TIMEOUT).read()
+        data = json.loads(raw.decode("utf-8"))
+        translated = "".join(part[0] for part in data[0] if part and part[0])
+        if dest == "zh" and not re.search(r"[\u4e00-\u9fff]", translated):
+            return translate_mymemory(text, src, dest)
+        return translated or text
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError, IndexError, TypeError):
+        return translate_mymemory(text, src, dest)
+
+
 def translate_mymemory(text: str, src: str, dest: str) -> str:
     if not text or src == dest:
         return text
@@ -272,14 +298,14 @@ def add_translations(articles: list[dict], summary_limit: int = 210, body_limit:
             body_out = []
             if i < body_limit:
                 for para in article.get("body", [])[:8]:
-                    body_out.append(translate_mymemory(para, src, "zh"))
-                    time.sleep(0.3)
+                    body_out.append(translate_text(para, src, "zh"))
+                    time.sleep(0.45)
             translations["zh"] = {
-                "title": translate_mymemory(article["title"], src, "zh"),
-                "summary": translate_mymemory(article["summary"], src, "zh"),
+                "title": translate_text(article["title"], src, "zh"),
+                "summary": translate_text(article["summary"], src, "zh"),
                 "body": body_out,
             }
-            time.sleep(0.3)
+            time.sleep(0.45)
 
         article["translations"] = translations
         if (i + 1) % 20 == 0:
@@ -348,7 +374,7 @@ def build_payload() -> dict:
     all_articles = dedupe_sort(all_articles)
     enrich_images(all_articles, limit=35)
     print("[info] translating all articles to Chinese…")
-    add_translations(all_articles, summary_limit=210, body_limit=25)
+    add_translations(all_articles, summary_limit=50, body_limit=15)
 
     grouped = group_by_section(all_articles)
     lead = all_articles[0] if all_articles else None

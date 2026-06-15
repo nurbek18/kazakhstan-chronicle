@@ -1,8 +1,22 @@
-const MYMEMORY_LANG = { ru: 'ru', kk: 'kk', zh: 'zh-CN', en: 'en' };
 const translateCache = new Map();
+const LANG_CODE = { ru: 'ru', kk: 'kk', zh: 'zh-CN', en: 'en' };
 
 function cacheKey(text, from, to) {
   return `${from}|${to}|${text.slice(0, 80)}`;
+}
+
+function hasChinese(text) {
+  return /[\u4e00-\u9fff]/.test(text || '');
+}
+
+async function translateViaGoogle(text, from, to = 'zh') {
+  const sl = LANG_CODE[from] || from;
+  const tl = LANG_CODE[to] || to;
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text.slice(0, 2000))}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('翻译失败');
+  const data = await res.json();
+  return data[0].map(p => p[0]).join('');
 }
 
 async function translateText(text, from, to = 'zh') {
@@ -17,15 +31,19 @@ async function translateText(text, from, to = 'zh') {
     return stored;
   }
 
-  const src = MYMEMORY_LANG[from] || from;
-  const dest = MYMEMORY_LANG[to] || to;
-  const chunk = text.slice(0, 480);
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${src}|${dest}`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('翻译服务暂时不可用');
-  const data = await res.json();
-  const translated = data.responseData?.translatedText || text;
+  let translated = text;
+  try {
+    translated = await translateViaGoogle(text, from, to);
+  } catch {
+    const src = LANG_CODE[from] || from;
+    const dest = LANG_CODE[to] || to;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 480))}&langpair=${src}|${dest}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      translated = data.responseData?.translatedText || text;
+    }
+  }
 
   translateCache.set(key, translated);
   try { sessionStorage.setItem(`tr:${key}`, translated); } catch { /* quota */ }
@@ -36,7 +54,7 @@ async function translateParagraphs(paragraphs, from) {
   const out = [];
   for (const p of paragraphs) {
     out.push(await translateText(p, from, 'zh'));
-    await sleep(350);
+    await sleep(200);
   }
   return out;
 }
@@ -44,14 +62,13 @@ async function translateParagraphs(paragraphs, from) {
 async function translateArticleFields(article) {
   const from = article.lang || 'ru';
   const loc = getLocalizedArticle(article);
-  if (!loc.needsTranslation && (loc.isTranslated || from === 'zh')) return loc;
+  if (!loc.needsTranslation) return loc;
 
-  const [title, summary] = await Promise.all([
-    translateText(article.title, from, 'zh'),
-    translateText(article.summary, from, 'zh'),
-  ]);
-  await sleep(300);
-  const body = await translateParagraphs((article.body || []).slice(0, 10), from);
+  const title = await translateText(article.title, from, 'zh');
+  const summary = await translateText(article.summary, from, 'zh');
+  const body = loc.body?.length && hasChinese(loc.body[0])
+    ? loc.body
+    : await translateParagraphs((article.body || []).slice(0, 10), from);
 
   return {
     title,

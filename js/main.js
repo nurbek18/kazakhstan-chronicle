@@ -59,7 +59,7 @@ function initArticlePage() {
       renderArticlePage(container, article);
     })
     .catch(() => {
-      container.innerHTML = `<p class="error">${t('loadError')}</p>`;
+      container.innerHTML = `<p class="error">${escapeHtml(t('loadError'))}</p>`;
     });
 }
 
@@ -68,8 +68,9 @@ function initHomeNews() {
   if (!main) return;
 
   loadNewsData()
-    .then(data => {
+    .then(async data => {
       cachedNews = data;
+      await prepareChineseContent(data);
       renderHomePage(data);
       const updated = document.getElementById('news-updated');
       if (updated && data.updated_at) {
@@ -84,6 +85,57 @@ function initHomeNews() {
           <p class="error-detail">${escapeHtml(err.message)}</p>
         </div>`;
     });
+}
+
+async function translateHeadline(article) {
+  const loc = getLocalizedArticle(article);
+  if (!loc.needsTranslation) return loc;
+  const from = article.lang || 'ru';
+  const title = await translateText(article.title, from, 'zh');
+  const summary = await translateText(article.summary, from, 'zh');
+  return setLocalizedDisplay(article, {
+    title,
+    summary,
+    body: loc.body,
+    section_label: sectionLabel(article.section),
+    isTranslated: true,
+    needsTranslation: false,
+  });
+}
+
+async function prepareChineseContent(data) {
+  const loading = document.getElementById('loading-state');
+  if (loading) {
+    loading.style.display = 'block';
+    loading.querySelector('p').textContent = t('translating');
+  }
+
+  const picks = [
+    data.lead,
+    ...(data.by_section?.politics || []).slice(0, 1),
+    ...(data.by_section?.economy || []).slice(0, 1),
+    ...(data.by_section?.culture || []).slice(0, 1),
+    ...(data.by_section?.sports || []).slice(0, 5),
+    ...(data.by_section?.society || []).slice(0, 4),
+    ...data.articles.slice(0, 24),
+  ].filter(Boolean);
+
+  const unique = [...new Map(picks.map(a => [a.id, a])).values()];
+
+  for (const article of unique) {
+    try {
+      await translateHeadline(article);
+    } catch { /* skip */ }
+  }
+
+  if (data.lead) {
+    const loc = getLocalizedArticle(data.lead);
+    const from = data.lead.lang || 'ru';
+    if (!loc.body?.length || !hasChinese(loc.body[0])) {
+      const body = await translateParagraphs((data.lead.body || []).slice(0, 3), from);
+      data.lead._zhDisplay = { ...data.lead._zhDisplay, body };
+    }
+  }
 }
 
 async function loadNewsData() {
@@ -137,7 +189,7 @@ function renderLeadStory(article) {
         <div class="image-frame">${imageHtml}</div>
         <figcaption>${escapeHtml(sourceName(article.source))} · ${escapeHtml(loc.section_label)}</figcaption>
       </figure>` : ''}
-      ${loc.body.slice(0, 3).map(p => `<p>${escapeHtml(p)}</p>`).join('')}
+      ${(loc.body?.length && hasChinese(loc.body[0]) ? loc.body : [loc.summary]).slice(0, 3).map(p => `<p>${escapeHtml(p)}</p>`).join('')}
       <p class="continued"><a href="article.html?id=${escapeAttr(article.id)}">${escapeHtml(t('readFull'))}</a></p>
       <p class="source-link"><a href="${escapeAttr(article.link)}" target="_blank" rel="noopener">${escapeHtml(t('readOriginal', sourceName(article.source)))}</a></p>
     </div>`;
