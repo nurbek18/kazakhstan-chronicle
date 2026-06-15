@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="哈萨克纪闻 — 哈萨克斯坦真实新闻，经典报纸风格">
+  <title>哈萨克纪闻 | Kazakhstan Chronicle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Noto+Serif+SC:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="paper-wrapper">
+    <header class="masthead">
+      <div class="masthead-top">
+        <span class="edition" id="edition-num">实时版</span>
+        <span class="date-line" id="date-line"></span>
+        <span class="price" id="news-updated">加载中…</span>
+      </div>
+      <div class="masthead-rule thick"></div>
+      <h1 class="paper-title">
+        <span class="title-main">哈萨克纪闻</span>
+        <span class="title-sub">KAZAKHSTAN CHRONICLE</span>
+      </h1>
+      <p class="tagline">哈萨克斯坦真实新闻 · Inform.kz · The Astana Times · 经典报纸版式</p>
+      <div class="masthead-rule"></div>
+      <nav class="section-nav" aria-label="版面导航">
+        <a href="#front-page" class="active">头版</a>
+        <a href="#politics">时政</a>
+        <a href="#economy">财经</a>
+        <a href="#culture">文化</a>
+        <a href="#sports">体育</a>
+        <a href="#more-news">更多</a>
+      </nav>
+      <div class="masthead-rule thin"></div>
+    </header>
+
+    <main id="front-page">
+      <div class="loading-state" id="loading-state">
+        <p>正在加载哈萨克斯坦新闻…</p>
+      </div>
+
+      <article class="lead-story" id="lead-story"></article>
+
+      <hr class="section-divider">
+
+      <section class="story-grid" id="story-grid"></section>
+
+      <hr class="section-divider ornamental">
+
+      <section class="inner-page">
+        <div class="inner-columns">
+          <article class="column-story" id="sports">
+            <h3 class="headline-sm">体坛快讯</h3>
+            <div class="rule-short"></div>
+            <div id="sports-column"><p>加载中…</p></div>
+          </article>
+
+          <article class="column-story">
+            <h3 class="headline-sm">社会见闻</h3>
+            <div class="rule-short"></div>
+            <div id="society-column"><p>加载中…</p></div>
+          </article>
+
+          <article class="column-story">
+            <h3 class="headline-sm">天气与出行</h3>
+            <div class="rule-short"></div>
+            <div id="weather-column" class="weather-report"><p>加载中…</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="more-news" id="more-news">
+        <h3 class="classifieds-title">更多新闻</h3>
+        <div class="masthead-rule thin"></div>
+        <div class="more-news-list" id="more-news-list"></div>
+      </section>
+    </main>
+
+    <footer class="paper-footer">
+      <div class="masthead-rule"></div>
+      <p>哈萨克纪闻社 &nbsp;·&nbsp; 阿斯塔纳 &amp; 阿拉木图 &nbsp;·&nbsp; 新闻来源：Inform.kz、The Astana Times</p>
+      <p class="footer-note">线上版每 6 小时自动更新 &nbsp;|&nbsp; 本地预览：<code>py server.py</code></p>
+    </footer>
+  </div>
+
+  <button class="font-size-toggle" id="font-toggle" aria-label="调整字号" title="调整字号">字</button>
+  <button class="refresh-toggle" id="refresh-toggle" aria-label="刷新新闻" title="刷新新闻">↻</button>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
