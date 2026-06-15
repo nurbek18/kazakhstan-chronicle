@@ -8,7 +8,9 @@ import html
 import json
 import re
 import ssl
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -54,12 +56,15 @@ SECTION_KEYWORDS = {
 }
 
 SECTION_LABELS = {
-    "politics": "时政",
-    "economy": "财经",
-    "culture": "文化",
-    "sports": "体育",
-    "society": "社会",
+    "politics": "politics",
+    "economy": "economy",
+    "culture": "culture",
+    "sports": "sports",
+    "society": "society",
 }
+
+TARGET_LANGS = ["ru", "en", "zh", "kk"]
+MYMEMORY = {"ru": "ru", "en": "en", "zh": "zh-CN", "kk": "kk"}
 
 
 def fetch_bytes(url: str) -> bytes:
@@ -216,7 +221,6 @@ def parse_feed(feed: dict) -> list[dict]:
                 "link": link,
                 "image": image,
                 "section": section,
-                "section_label": SECTION_LABELS[section],
                 "source": feed["source"],
                 "lang": feed["lang"],
                 "author": author or feed["source"],
@@ -238,10 +242,65 @@ def enrich_images(articles: list[dict], limit: int = 30) -> None:
             fetched += 1
 
 
+def translate_mymemory(text: str, src: str, dest: str) -> str:
+    if not text or src == dest:
+        return text
+    src_code = MYMEMORY.get(src, src)
+    dest_code = MYMEMORY.get(dest, dest)
+    chunk = text[:480]
+    query = urllib.parse.urlencode({"q": chunk, "langpair": f"{src_code}|{dest_code}"})
+    url = f"https://api.mymemory.translated.net/get?{query}"
+    try:
+        raw = fetch_bytes(url)
+        data = json.loads(raw.decode("utf-8"))
+        return data.get("responseData", {}).get("translatedText") or text
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError):
+        return text
+
+
+def add_translations(articles: list[dict], summary_limit: int = 50, body_limit: int = 12) -> None:
+    for i, article in enumerate(articles):
+        src = article.get("lang", "ru")
+        translations: dict[str, dict] = {
+            src: {
+                "title": article["title"],
+                "summary": article["summary"],
+                "body": article.get("body", []),
+            }
+        }
+        if i >= summary_limit:
+            article["translations"] = translations
+            continue
+
+        for lang in TARGET_LANGS:
+            if lang == src:
+                continue
+            translations[lang] = {
+                "title": translate_mymemory(article["title"], src, lang),
+                "summary": translate_mymemory(article["summary"], src, lang),
+                "body": [],
+            }
+            time.sleep(0.35)
+
+        if i < body_limit:
+            for lang in TARGET_LANGS:
+                if lang == src:
+                    continue
+                body_out = []
+                for para in article.get("body", [])[:8]:
+                    body_out.append(translate_mymemory(para, src, lang))
+                    time.sleep(0.35)
+                translations[lang]["body"] = body_out
+
+        article["translations"] = translations
+        if (i + 1) % 10 == 0:
+            print(f"[translate] {i + 1}/{min(summary_limit, len(articles))} articles")
+
+
 def fetch_weather() -> dict:
     cities = {
-        "astana": {"name": "阿斯塔纳", "lat": 51.16, "lon": 71.47},
-        "almaty": {"name": "阿拉木图", "lat": 43.24, "lon": 76.95},
+        "astana": {"lat": 51.16, "lon": 71.47},
+        "almaty": {"lat": 43.24, "lon": 76.95},
     }
     result = {}
     for key, city in cities.items():
@@ -258,7 +317,6 @@ def fetch_weather() -> dict:
             current = data.get("current", {})
             daily = data.get("daily", {})
             result[key] = {
-                "name": city["name"],
                 "temp": current.get("temperature_2m"),
                 "wind": current.get("wind_speed_10m"),
                 "weather_code": current.get("weather_code"),
@@ -268,7 +326,7 @@ def fetch_weather() -> dict:
                 "tomorrow_low": daily.get("temperature_2m_min", [None, None])[1],
             }
         except (urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError):
-            result[key] = {"name": city["name"], "temp": None}
+            result[key] = {"temp": None}
     return result
 
 
@@ -300,6 +358,8 @@ def build_payload() -> dict:
 
     all_articles = dedupe_sort(all_articles)
     enrich_images(all_articles, limit=35)
+    print("[info] translating articles (this may take a few minutes)…")
+    add_translations(all_articles, summary_limit=40, body_limit=10)
 
     grouped = group_by_section(all_articles)
     lead = all_articles[0] if all_articles else None
