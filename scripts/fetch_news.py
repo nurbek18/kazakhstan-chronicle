@@ -33,7 +33,7 @@ FEEDS = [
     {"id": "inform_news", "url": "https://www.inform.kz/rss/ru.xml", "source": "Inform.kz", "lang": "ru", "default_section": "society"},
     {"id": "inform_president", "url": "https://www.inform.kz/rss/presidentru.xml", "source": "Inform.kz", "lang": "ru", "default_section": "politics"},
     {"id": "inform_economy", "url": "https://www.inform.kz/rss/inform_kz_exhange_ru.xml", "source": "Inform.kz", "lang": "ru", "default_section": "economy"},
-    {"id": "astana_times", "url": "https://astanatimes.com/feed/", "source": "The Astana Times", "lang": "en", "default_section": "society"},
+    {"id": "astana_times", "url": "https://astanatimes.com/feed/", "source": "阿斯塔纳时报", "lang": "en", "default_section": "society"},
 ]
 
 SECTION_KEYWORDS = {
@@ -63,7 +63,7 @@ SECTION_LABELS = {
     "society": "society",
 }
 
-TARGET_LANGS = ["ru", "en", "zh", "kk"]
+TARGET_LANGS = ["zh"]
 MYMEMORY = {"ru": "ru", "en": "en", "zh": "zh-CN", "kk": "kk"}
 
 
@@ -258,43 +258,32 @@ def translate_mymemory(text: str, src: str, dest: str) -> str:
         return text
 
 
-def add_translations(articles: list[dict], summary_limit: int = 50, body_limit: int = 12) -> None:
+def add_translations(articles: list[dict], summary_limit: int = 210, body_limit: int = 25) -> None:
     for i, article in enumerate(articles):
         src = article.get("lang", "ru")
-        translations: dict[str, dict] = {
-            src: {
+        translations: dict[str, dict] = {}
+        if src == "zh":
+            translations["zh"] = {
                 "title": article["title"],
                 "summary": article["summary"],
                 "body": article.get("body", []),
             }
-        }
-        if i >= summary_limit:
-            article["translations"] = translations
-            continue
-
-        for lang in TARGET_LANGS:
-            if lang == src:
-                continue
-            translations[lang] = {
-                "title": translate_mymemory(article["title"], src, lang),
-                "summary": translate_mymemory(article["summary"], src, lang),
-                "body": [],
-            }
-            time.sleep(0.35)
-
-        if i < body_limit:
-            for lang in TARGET_LANGS:
-                if lang == src:
-                    continue
-                body_out = []
+        elif i < summary_limit:
+            body_out = []
+            if i < body_limit:
                 for para in article.get("body", [])[:8]:
-                    body_out.append(translate_mymemory(para, src, lang))
-                    time.sleep(0.35)
-                translations[lang]["body"] = body_out
+                    body_out.append(translate_mymemory(para, src, "zh"))
+                    time.sleep(0.3)
+            translations["zh"] = {
+                "title": translate_mymemory(article["title"], src, "zh"),
+                "summary": translate_mymemory(article["summary"], src, "zh"),
+                "body": body_out,
+            }
+            time.sleep(0.3)
 
         article["translations"] = translations
-        if (i + 1) % 10 == 0:
-            print(f"[translate] {i + 1}/{min(summary_limit, len(articles))} articles")
+        if (i + 1) % 20 == 0:
+            print(f"[translate] {i + 1}/{len(articles)} articles")
 
 
 def fetch_weather() -> dict:
@@ -358,8 +347,8 @@ def build_payload() -> dict:
 
     all_articles = dedupe_sort(all_articles)
     enrich_images(all_articles, limit=35)
-    print("[info] translating articles (this may take a few minutes)…")
-    add_translations(all_articles, summary_limit=40, body_limit=10)
+    print("[info] translating all articles to Chinese…")
+    add_translations(all_articles, summary_limit=210, body_limit=25)
 
     grouped = group_by_section(all_articles)
     lead = all_articles[0] if all_articles else None

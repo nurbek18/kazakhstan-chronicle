@@ -6,25 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initArticlePage();
   initHomeNews();
   initRefreshButton();
-  window.addEventListener('langchange', onLangChange);
 });
-
-function onLangChange() {
-  setDateLine();
-  if (cachedNews && document.getElementById('front-page')) {
-    renderHomePage(cachedNews);
-    const updated = document.getElementById('news-updated');
-    if (updated && cachedNews.updated_at) {
-      updated.textContent = t('newsUpdated', formatDateTime(cachedNews.updated_at));
-    }
-  }
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('id') && cachedNews) {
-    const article = cachedNews.articles.find(a => a.id === params.get('id'));
-    const container = document.getElementById('article-content');
-    if (article && container) renderArticlePage(container, article);
-  }
-}
 
 function initFontToggle() {
   const btn = document.getElementById('font-toggle');
@@ -139,7 +121,6 @@ function renderLeadStory(article) {
   const block = document.getElementById('lead-story');
   if (!block || !article) return;
   const loc = getLocalizedArticle(article);
-  const origName = ORIGINAL_LANG_NAME[article.lang] || article.lang;
   const imageHtml = article.image
     ? `<img src="${escapeAttr(article.image)}" alt="" loading="eager" referrerpolicy="no-referrer">` : '';
 
@@ -148,17 +129,17 @@ function renderLeadStory(article) {
       <span class="kicker">${escapeHtml(loc.section_label)}</span>
       <h2 class="headline-xl">${escapeHtml(loc.title)}</h2>
       <p class="deck">${escapeHtml(loc.summary)}</p>
-      <p class="byline">${escapeHtml(article.source)} &nbsp;|&nbsp; ${formatDateTime(article.published)}</p>
+      <p class="byline">${escapeHtml(sourceName(article.source))} &nbsp;|&nbsp; ${formatDateTime(article.published)}</p>
     </div>
     <div class="lead-body columns-3">
       ${article.image ? `
       <figure class="lead-image">
         <div class="image-frame">${imageHtml}</div>
-        <figcaption>${escapeHtml(article.source)} · ${escapeHtml(loc.section_label)}</figcaption>
+        <figcaption>${escapeHtml(sourceName(article.source))} · ${escapeHtml(loc.section_label)}</figcaption>
       </figure>` : ''}
       ${loc.body.slice(0, 3).map(p => `<p>${escapeHtml(p)}</p>`).join('')}
       <p class="continued"><a href="article.html?id=${escapeAttr(article.id)}">${escapeHtml(t('readFull'))}</a></p>
-      <p class="source-link"><a href="${escapeAttr(article.link)}" target="_blank" rel="noopener">${escapeHtml(t('readOriginal', article.source, origName))}</a></p>
+      <p class="source-link"><a href="${escapeAttr(article.link)}" target="_blank" rel="noopener">${escapeHtml(t('readOriginal', sourceName(article.source)))}</a></p>
     </div>`;
 }
 
@@ -181,7 +162,7 @@ function renderStoryGrid(bySection) {
         <span class="section-label">${escapeHtml(loc.section_label)}</span>
         <h3 class="headline-md">${escapeHtml(loc.title)}</h3>
         <p class="story-excerpt">${escapeHtml(loc.summary)}</p>
-        <p class="card-meta">${escapeHtml(article.source)} · ${formatDateTime(article.published)}</p>
+        <p class="card-meta">${escapeHtml(sourceName(article.source))} · ${formatDateTime(article.published)}</p>
         <a href="article.html?id=${escapeAttr(article.id)}" class="read-more">${escapeHtml(t('readFull'))}</a>
       </article>`;
   }).join('');
@@ -207,7 +188,7 @@ function renderInnerColumns(bySection, weather) {
     societyCol.innerHTML = society.length
       ? society.map(a => {
           const loc = getLocalizedArticle(a);
-          return `<p><a href="article.html?id=${escapeAttr(a.id)}">${escapeHtml(truncate(loc.title, 100))}</a> <span class="inline-meta">(${escapeHtml(a.source)})</span></p>`;
+          return `<p><a href="article.html?id=${escapeAttr(a.id)}">${escapeHtml(truncate(loc.title, 100))}</a> <span class="inline-meta">(${escapeHtml(sourceName(a.source))})</span></p>`;
         }).join('')
       : `<p>${escapeHtml(t('noSociety'))}</p>`;
   }
@@ -227,7 +208,7 @@ function renderMoreNews(articles) {
         <span class="section-label">${escapeHtml(loc.section_label)}</span>
         <h4><a href="article.html?id=${escapeAttr(a.id)}">${escapeHtml(loc.title)}</a></h4>
         <p>${escapeHtml(truncate(loc.summary, 140))}</p>
-        <span class="inline-meta">${escapeHtml(a.source)} · ${formatDateTime(a.published)}</span>
+        <span class="inline-meta">${escapeHtml(sourceName(a.source))} · ${formatDateTime(a.published)}</span>
       </div>
     </article>`;
   }).join('');
@@ -235,20 +216,19 @@ function renderMoreNews(articles) {
 
 async function renderArticlePage(container, article) {
   let loc = getLocalizedArticle(article);
-  const origName = ORIGINAL_LANG_NAME[article.lang] || article.lang;
 
   if (loc.needsTranslation) {
     container.innerHTML = `<p class="loading-state">${escapeHtml(t('translating'))}</p>`;
     try {
-      loc = await translateArticleFields(article, getLang());
+      loc = await translateArticleFields(article);
     } catch {
-      loc = getLocalizedArticle(article, article.lang);
+      loc = getLocalizedArticle(article);
     }
   }
 
   document.title = `${loc.title} | ${t('siteTitle')}`;
   const imageBlock = article.image
-    ? `<figure class="article-figure"><img src="${escapeAttr(article.image)}" alt="" referrerpolicy="no-referrer"><figcaption>${escapeHtml(article.source)}</figcaption></figure>`
+    ? `<figure class="article-figure"><img src="${escapeAttr(article.image)}" alt="" referrerpolicy="no-referrer"><figcaption>${escapeHtml(sourceName(article.source))}</figcaption></figure>`
     : '';
 
   container.innerHTML = `
@@ -257,12 +237,12 @@ async function renderArticlePage(container, article) {
       <span class="section-label">${escapeHtml(loc.section_label)}</span>
       <h2 class="headline-xl">${escapeHtml(loc.title)}</h2>
       <p class="deck">${escapeHtml(loc.summary)}</p>
-      <p class="byline">${escapeHtml(article.source)} &nbsp;|&nbsp; ${formatDateTime(article.published)}</p>
+      <p class="byline">${escapeHtml(sourceName(article.source))} &nbsp;|&nbsp; ${formatDateTime(article.published)}</p>
       ${loc.isTranslated ? `<p class="translation-note">${escapeHtml(t('translationNote'))}</p>` : ''}
     </header>
     ${imageBlock}
     <div class="article-body">${loc.body.map(p => `<p>${escapeHtml(p)}</p>`).join('')}</div>
-    <p class="source-link article-source"><a href="${escapeAttr(article.link)}" target="_blank" rel="noopener">${escapeHtml(t('readOriginalShort', article.source))}</a></p>`;
+    <p class="source-link article-source"><a href="${escapeAttr(article.link)}" target="_blank" rel="noopener">${escapeHtml(t('readOriginal', sourceName(article.source)))}</a></p>`;
 }
 
 function renderWeather(weather) {

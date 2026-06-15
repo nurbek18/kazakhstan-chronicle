@@ -1,10 +1,11 @@
+const MYMEMORY_LANG = { ru: 'ru', kk: 'kk', zh: 'zh-CN', en: 'en' };
 const translateCache = new Map();
 
 function cacheKey(text, from, to) {
   return `${from}|${to}|${text.slice(0, 80)}`;
 }
 
-async function translateText(text, from, to) {
+async function translateText(text, from, to = 'zh') {
   if (!text?.trim() || from === to) return text;
 
   const key = cacheKey(text, from, to);
@@ -22,7 +23,7 @@ async function translateText(text, from, to) {
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${src}|${dest}`;
 
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Translation API error');
+  if (!res.ok) throw new Error('翻译服务暂时不可用');
   const data = await res.json();
   const translated = data.responseData?.translatedText || text;
 
@@ -31,27 +32,26 @@ async function translateText(text, from, to) {
   return translated;
 }
 
-async function translateParagraphs(paragraphs, from, to) {
+async function translateParagraphs(paragraphs, from) {
   const out = [];
   for (const p of paragraphs) {
-    out.push(await translateText(p, from, to));
+    out.push(await translateText(p, from, 'zh'));
     await sleep(350);
   }
   return out;
 }
 
-async function translateArticleFields(article, to) {
+async function translateArticleFields(article) {
   const from = article.lang || 'ru';
-  const loc = getLocalizedArticle(article, to);
-  if (!loc.needsTranslation && loc.isTranslated) return loc;
-  if (from === to) return loc;
+  const loc = getLocalizedArticle(article);
+  if (!loc.needsTranslation && (loc.isTranslated || from === 'zh')) return loc;
 
   const [title, summary] = await Promise.all([
-    translateText(article.title, from, to),
-    translateText(article.summary, from, to),
+    translateText(article.title, from, 'zh'),
+    translateText(article.summary, from, 'zh'),
   ]);
   await sleep(300);
-  const body = await translateParagraphs((article.body || []).slice(0, 10), from, to);
+  const body = await translateParagraphs((article.body || []).slice(0, 10), from);
 
   return {
     title,
@@ -59,6 +59,7 @@ async function translateArticleFields(article, to) {
     body,
     section_label: sectionLabel(article.section),
     isTranslated: true,
+    needsTranslation: false,
   };
 }
 

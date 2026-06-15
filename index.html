@@ -1,45 +1,44 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Kazakhstan Chronicle — multilingual news in newspaper style">
-  <title>Kazakhstan Chronicle</title>
+  <meta name="description" content="哈萨克斯坦纪闻 — 哈萨克斯坦真实新闻，全中文报纸版式">
+  <title>哈萨克斯坦纪闻 | KAZAKHSTAN DAILY</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Noto+Serif+SC:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="paper-wrapper">
     <header class="masthead">
       <div class="masthead-top">
-        <span class="edition" id="edition-num">Live</span>
+        <span class="edition" id="edition-num">每日电讯</span>
         <span class="date-line" id="date-line"></span>
-        <span class="price" id="news-updated">…</span>
+        <span class="price" id="news-updated">加载中…</span>
       </div>
-      <div class="lang-switcher" id="lang-switcher" aria-label="Language"></div>
       <div class="masthead-rule thick"></div>
       <h1 class="paper-title">
-        <span class="title-main" id="site-title">Kazakhstan Chronicle</span>
-        <span class="title-sub" id="site-sub">KAZAKHSTAN CHRONICLE</span>
+        <span class="title-main" id="site-title">哈萨克斯坦纪闻</span>
+        <span class="title-sub" id="site-sub">KAZAKHSTAN DAILY</span>
       </h1>
-      <p class="tagline" id="site-tagline"></p>
+      <p class="tagline" id="site-tagline">哈萨克斯坦真实新闻 · Inform.kz · 阿斯塔纳时报 · 经典报纸版式</p>
       <div class="masthead-rule"></div>
-      <nav class="section-nav" aria-label="Sections">
-        <a href="#front-page" class="active" id="nav-front">Front</a>
-        <a href="#politics" id="nav-politics">Politics</a>
-        <a href="#economy" id="nav-economy">Economy</a>
-        <a href="#culture" id="nav-culture">Culture</a>
-        <a href="#sports" id="nav-sports">Sports</a>
-        <a href="#more-news" id="nav-more">More</a>
+      <nav class="section-nav" aria-label="版面导航">
+        <a href="#front-page" class="active" id="nav-front">头版</a>
+        <a href="#politics" id="nav-politics">时政</a>
+        <a href="#economy" id="nav-economy">财经</a>
+        <a href="#culture" id="nav-culture">文化</a>
+        <a href="#sports" id="nav-sports">体育</a>
+        <a href="#more-news" id="nav-more">更多</a>
       </nav>
       <div class="masthead-rule thin"></div>
     </header>
 
     <main id="front-page">
       <div class="loading-state" id="loading-state">
-        <p id="loading-text">Loading…</p>
+        <p id="loading-text">正在加载哈萨克斯坦新闻…</p>
       </div>
       <article class="lead-story" id="lead-story"></article>
       <hr class="section-divider">
@@ -48,24 +47,24 @@
       <section class="inner-page">
         <div class="inner-columns">
           <article class="column-story" id="sports">
-            <h3 class="headline-sm" id="sports-head">Sports</h3>
+            <h3 class="headline-sm" id="sports-head">体坛快讯</h3>
             <div class="rule-short"></div>
-            <div id="sports-column"><p>…</p></div>
+            <div id="sports-column"><p>加载中…</p></div>
           </article>
           <article class="column-story">
-            <h3 class="headline-sm" id="society-head">Society</h3>
+            <h3 class="headline-sm" id="society-head">社会见闻</h3>
             <div class="rule-short"></div>
-            <div id="society-column"><p>…</p></div>
+            <div id="society-column"><p>加载中…</p></div>
           </article>
           <article class="column-story">
-            <h3 class="headline-sm" id="weather-head">Weather</h3>
+            <h3 class="headline-sm" id="weather-head">天气与出行</h3>
             <div class="rule-short"></div>
-            <div id="weather-column" class="weather-report"><p>…</p></div>
+            <div id="weather-column" class="weather-report"><p>加载中…</p></div>
           </article>
         </div>
       </section>
       <section class="more-news" id="more-news">
-        <h3 class="classifieds-title" id="more-news-title">More News</h3>
+        <h3 class="classifieds-title" id="more-news-title">更多新闻</h3>
         <div class="masthead-rule thin"></div>
         <div class="more-news-list" id="more-news-list"></div>
       </section>
@@ -73,13 +72,13 @@
 
     <footer class="paper-footer">
       <div class="masthead-rule"></div>
-      <p id="footer-text"></p>
-      <p class="footer-note" id="footer-note"></p>
+      <p id="footer-text">哈萨克斯坦纪闻社 · 阿斯塔纳 & 阿拉木图 · 来源：Inform.kz、阿斯塔纳时报</p>
+      <p class="footer-note" id="footer-note">每 6 小时自动更新新闻</p>
     </footer>
   </div>
 
-  <button class="font-size-toggle" id="font-toggle" aria-label="Font size" title="Font size">A</button>
-  <button class="refresh-toggle" id="refresh-toggle" aria-label="Refresh" title="Refresh">↻</button>
+  <button class="font-size-toggle" id="font-toggle" aria-label="调整字号" title="调整字号">字</button>
+  <button class="refresh-toggle" id="refresh-toggle" aria-label="刷新新闻" title="刷新新闻">↻</button>
 
   <script src="js/i18n.js"></script>
   <script src="js/translate.js"></script>
